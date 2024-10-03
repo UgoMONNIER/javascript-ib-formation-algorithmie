@@ -161,6 +161,45 @@
 
 //------------------------------------------------ Projet JS - Outil Comptable pour une Agence de Comptabilité -----------------------------------------------------------------
 
+function isNumeric(str) {
+  if (typeof str != "string") return false;
+  return !isNaN(str) && !isNaN(parseFloat(str));
+}
+
+function clear(event) {
+  if (event.target.innerHTML === "C") {
+    document.getElementById("ecran").innerHTML = "0";
+  }
+}
+
+function getTable(str) {
+  let array_operator = ["-", "+", "/", "*", "."];
+  table_brut = str.split("");
+  table_temp = [];
+  table = [];
+  let j = 0;
+  while (j < table_brut.length) {
+    if (!isNumeric(table_brut[j])) {
+      table.push(table_brut[j]);
+      j++;
+    }
+    for (let i = j; isNumeric(table_brut[i]); i++) {
+      if (isNumeric(table_brut[i])) {
+        table_temp.push(table_brut[i]);
+      }
+      j++;
+    }
+    let concatNumber = "";
+    for (let i = 0; i < table_temp.length; i++) {
+      concatNumber += table_temp[i];
+    }
+    table_temp = [];
+    table.push(concatNumber);
+  }
+
+  return table;
+}
+
 class Calculatrice {
   constructor(nombreGauche, nombreDroite, arrayNumberForAverage) {
     this.nombreGauche = nombreGauche;
@@ -200,128 +239,70 @@ class Calculatrice {
   }
 }
 
-// --------------------------------- Gestion de l'interface et actions utilisateur --------------------------------------------
-
 const elements = document.querySelectorAll(".btn");
 for (let i = 0; i < elements.length; i++) {
   elements[i].addEventListener("click", myFunction);
 
 }
 
-function calculNombreGauche(str) {
-  table_str = str.split("");
-  console.log(table_str);
-  console.log(table_str.findLast(e => e));
-
-  if (table_str.findLast(e => e)) {
-  }
-}
-
-function isNumeric(str) {
-  if (typeof str != "string") return false;
-  return !isNaN(str) && !isNaN(parseFloat(str));
-}
-
-function getTable(str) {
-  let array_operator = ["-", "+", "/", "*", "."];
-  table_brut = str.split("");
-  table_temp = [];
-  table = [];
-  let j = 0;
-  while (j < table_brut.length) {
-    if (!isNumeric(table_brut[j])) {
-      table.push(table_brut[j]);
-      j++;
-    }
-    for (let i = j; isNumeric(table_brut[i]); i++) {
-      if (isNumeric(table_brut[i])) {
-        table_temp.push(table_brut[i]);
-      }
-      j++;
-    }
-    let concatNumber = "";
-    for (let i = 0; i < table_temp.length; i++) {
-      concatNumber += table_temp[i];
-    }
-    table_temp = [];
-    table.push(concatNumber);
-  }
-
-  return table;
-}
-
 function myFunction(event) {
-  let array_operator = ["-", "+", "/", "*", "."];
+  const array_operator = ["-", "+", "/", "*", "."];
   let screen_value = document.getElementById("ecran").innerHTML;
 
-  // let table_screen = document.getElementById("ecran").innerHTML.split('')
-  // let hasUsedOperator = array_operator.includes(table_screen.findLast(e => array_operator.includes(e)))
-  let nombreGauche = screen_value == "0" ? "" : screen_value;
+  let nombreGauche = screen_value === "0" ? "" : screen_value;
   document.getElementById("ecran").innerHTML = nombreGauche + event.target.innerHTML;
-  let table_arranged = getTable(nombreGauche + event.target.innerHTML);
   
-  let table_to_be_calculed = table_arranged
-  let nb_multi = 0
-  let index_multi= []
-  for(let i = 0; i < table_arranged.length -1 ; i++){
-    if((table_arranged[i] == "*")) {
-      nb_multi ++;
-      index_multi.push(i)
+  let expression = nombreGauche + event.target.innerHTML;
+
+  if (event.target.innerHTML === "=") {
+    let table_arranged = getTable(expression);
+
+    let tempResult = [];
+    for (let i = 0; i < table_arranged.length; i++) {
+      if (array_operator.includes(table_arranged[i])) {
+        let operateur = table_arranged[i];
+// priorité multi division
+        if (operateur === "*" || operateur === "/") {
+          let nombreG = parseFloat(tempResult.pop());
+          let nombreD = parseFloat(table_arranged[i + 1]);
+
+          let calculatrice = new Calculatrice(nombreG, nombreD, []);
+          let resultat;
+
+          if (operateur === "*") {
+            resultat = calculatrice.calculMultiplication();
+          } else {
+            resultat = calculatrice.calculDivision();
+          }
+
+          // ajout résultat a temp
+          tempResult.push(resultat);
+          i++; 
+        } else {
+          tempResult.push(table_arranged[i]);
+        }
+      } else {
+        tempResult.push(table_arranged[i]);
+      }
     }
+
+    //  addi et soustraction
+    let finalResult = parseFloat(tempResult[0]);
+    for (let i = 1; i < tempResult.length; i++) {
+      let operateur = tempResult[i];
+
+      if (operateur === "+") {
+        finalResult += parseFloat(tempResult[i + 1]);
+        i++;
+      } else if (operateur === "-") {
+        finalResult -= parseFloat(tempResult[i + 1]);
+        i++; 
+      }
+    }
+
+    document.getElementById("ecran").innerHTML = finalResult;
   }
-  
-  
-  
-  for(let i = 0; i < nb_multi; i++){
-    table_to_be_calculed[index_multi[i]] = table_arranged[index_multi[i]-1] * table_arranged[index_multi[i]+1] 
-    
-    table_to_be_calculed.splice(index_multi[i]+1, 1),table_to_be_calculed.splice(index_multi[i]-1, 1)
-  }
-  console.log(table_to_be_calculed);
 
-    
-
-  // let isfirstNumber = !array_operator.includes(event.target.innerHTML) && isNumeric(screen_value)
-
-  // if(isfirstNumber){
-  //   let nombreGauche = document.getElementById("ecran").innerHTML;
-  //   let Calculatrice1 = new Calculatrice(nombreGauche, event.target.innerHTML);
-  //   if(table_str.findLast(e => e) === "+")
-  //   {
-  //     let somme = Calculatrice1.calculSomme();
-  //     console.log(somme);
-
-  //   }
-  // }
-
-  // if(hasUsedOperator){
-  //   let Calculatrice1 = new Calculatrice(12, 15, [15,12]);
-  //   let nombreGauche = document.getElementById("ecran").innerHTML;
-  //   console.log(nombreGauche + event.target.innerHTML);
-
-  //   document.getElementById("ecran").innerHTML = nombreGauche + event.target.innerHTML;
-  // }
-
-  // if(array_operator.includes(event.target.innerHTML) && !hasUsedOperator){
-  //   let Calculatrice1 = new Calculatrice(12, 15, [15,12]);
-  //   let nombreGauche = document.getElementById("ecran").innerHTML;
-
-  //   document.getElementById("ecran").innerHTML = nombreGauche + event.target.innerHTML;
-
-  // }
-  // else{
-  //   let Calculatrice1 = new Calculatrice(12, 15, [15,12]);
-  //   let nombreGauche = document.getElementById("ecran").innerHTML
-
-  //   document.getElementById("ecran").innerHTML = event.target.innerHTML;
-
-  // }
+  clear(event);
 }
 
-function myFunctionEqual(event) {}
-
-function clear(event) {
-  if (event.target.innerHTML === "C") {
-    document.getElementById("ecran").innerHTML = "0";
-  }
-}
