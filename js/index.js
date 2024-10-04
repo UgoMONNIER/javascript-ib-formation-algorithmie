@@ -166,15 +166,34 @@ function isNumeric(str) {
   return !isNaN(str) && !isNaN(parseFloat(str));
 }
 
+var isNumber = function isNumber(value) {
+  return typeof value === "number" && isFinite(value);
+};
+
 function clear(event) {
   if (event.target.innerHTML === "C") {
     document.getElementById("ecran").innerHTML = "0";
   }
 }
 
+function convertDecimalValues(tab) {
+  let tab_converted = [...tab];
+  for (let i = 1; i < tab.length; i++) {
+    if (tab[i] === ".") {
+      tab_converted[i] = tab[i - 1] + tab[i] + tab[i + 1];
+      tab_converted[i - 1] = "_";
+      tab_converted[i + 1] = "_";
+    }
+  }
+  tab_converted = tab_converted.filter(e => e !== "_")
+  return tab_converted;
+}
+convertDecimalValues(["5", ".", "2"]);
+convertDecimalValues(["5", ".", "2", "+", "4", ".", "2"]);
+
 function getTable(str) {
-  let array_operator = ["-", "+", "/", "*", "."];
-  table_brut = str.split("");
+  let array_operator = ["-", "+", "/", "*"];
+  table_brut = [...str.split("")];
   table_temp = [];
   table = [];
   let j = 0;
@@ -196,6 +215,21 @@ function getTable(str) {
     table_temp = [];
     table.push(concatNumber);
   }
+
+  // let tempResult = [];
+  // let operateur = table[i];
+  // if (operateur === ".") {
+  // for (let i = 1; i < table.length; i++) {
+
+  //     tempResult.push(table[i - 1] + table[i] + table[i + 1]);
+  //     i++;
+  //   }
+  // }
+  // else {
+  //   tempResult = [table[0]];
+  //   tempResult.push(table[i]);
+  //   tempResultConverted = [...tempResult];
+  // }
 
   return table;
 }
@@ -230,9 +264,10 @@ class Calculatrice {
     if (this.arrayNumberForAverage.length == 0) {
       return 0;
     }
+
     let moyenne = 0;
     for (let i = 0; i < this.arrayNumberForAverage.length; i++) {
-      moyenne += this.arrayNumberForAverage[i];
+      moyenne += parseFloat(this.arrayNumberForAverage[i]);
     }
     moyenne = moyenne / this.arrayNumberForAverage.length;
     return moyenne;
@@ -242,7 +277,6 @@ class Calculatrice {
 const elements = document.querySelectorAll(".btn");
 for (let i = 0; i < elements.length; i++) {
   elements[i].addEventListener("click", myFunction);
-
 }
 
 function myFunction(event) {
@@ -250,18 +284,46 @@ function myFunction(event) {
   let screen_value = document.getElementById("ecran").innerHTML;
 
   let nombreGauche = screen_value === "0" ? "" : screen_value;
-  document.getElementById("ecran").innerHTML = nombreGauche + event.target.innerHTML;
-  
+  document.getElementById("ecran").innerHTML =
+    nombreGauche + event.target.innerHTML;
+
   let expression = nombreGauche + event.target.innerHTML;
+
+  if (event.target.innerHTML === "MOY") {
+    let expressionMoy = nombreGauche;
+    let table_arranged = getTable(expressionMoy);
+
+    let tempResult = [table_arranged[0]];
+    let finalResult = parseFloat(table_arranged[0]);
+    for (let i = 1; i < table_arranged.length; i++) {
+      let operateur = tempResult[i];
+
+      if (operateur === "+") {
+        finalResult += parseFloat(tempResult[i + 1]);
+        i++;
+      } else {
+        tempResult.push(table_arranged[i]);
+      }
+    }
+    tempResult = tempResult.filter(word => word !== "+");
+
+    let calculatrice = new Calculatrice(0, 0, tempResult);
+    moy = calculatrice.calculMoyenne();
+
+    document.getElementById("ecran").innerHTML = moy;
+  }
 
   if (event.target.innerHTML === "=") {
     let table_arranged = getTable(expression);
+    console.log(table_arranged);
+    
+    table_arranged = convertDecimalValues(table_arranged)
 
     let tempResult = [];
     for (let i = 0; i < table_arranged.length; i++) {
       if (array_operator.includes(table_arranged[i])) {
         let operateur = table_arranged[i];
-// priorité multi division
+        // priorité multi division
         if (operateur === "*" || operateur === "/") {
           let nombreG = parseFloat(tempResult.pop());
           let nombreD = parseFloat(table_arranged[i + 1]);
@@ -277,7 +339,7 @@ function myFunction(event) {
 
           // ajout résultat a temp
           tempResult.push(resultat);
-          i++; 
+          i++;
         } else {
           tempResult.push(table_arranged[i]);
         }
@@ -296,7 +358,7 @@ function myFunction(event) {
         i++;
       } else if (operateur === "-") {
         finalResult -= parseFloat(tempResult[i + 1]);
-        i++; 
+        i++;
       }
     }
 
@@ -305,4 +367,3 @@ function myFunction(event) {
 
   clear(event);
 }
-
